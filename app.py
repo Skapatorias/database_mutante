@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from logica  import isMutant
+from sqlalchemy.sql import select
+from sqlalchemy import create_engine, func, table, column
+
 
 app = Flask(__name__)
 
@@ -8,6 +11,8 @@ app.debug = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:admin@localhost/mutante'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+engine = create_engine('postgresql://postgres:admin@localhost/mutante')
+conn = engine.connect()
 
 class esMutante(db.Model):
     __tablename__ = 'esMutante'
@@ -16,7 +21,7 @@ class esMutante(db.Model):
 
     def __init__(self, adn):
         self.adn = adn
-        
+
 class NoesMutante(db.Model):
     __tablename__ = 'NoesMutante'
     id = db.Column(db.Integer, primary_key=True)
@@ -24,7 +29,7 @@ class NoesMutante(db.Model):
 
     def __init__(self, adn):
         self.adn = adn
-        
+
 
 @app.route('/')
 def index():
@@ -80,7 +85,14 @@ def submit():
 
 @app.route('/stats')
 def stats():
-    pass
+    cantidadMutantes = db.session.query(esMutante.adn).count()
+    cantidadNoMutantes =  db.session.query(NoesMutante.adn).count()
+    ratio = cantidadMutantes/cantidadNoMutantes
+    valores = {}
+    valores["cantidadMutantes"]=cantidadMutantes
+    valores["cantidadNoMutantes"]=cantidadNoMutantes
+    valores["ratio"]=ratio
+    return jsonify(valores)
 
 
 if __name__ == "__main__":
